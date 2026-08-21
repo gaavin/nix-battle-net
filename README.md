@@ -14,7 +14,7 @@
 Point `PROTONPATH` at a Steam compat tool (`steamcompattool` output):
 
 ```bash
-PROTONPATH=/path/to/proton-cachyos nix run github:gaavin/nix-battle-net
+PROTONPATH=/path/to/proton nix run github:gaavin/nix-battle-net
 ```
 
 Requires `x86_64-linux`, flakes, and a Proton already on the system. This flake does not vendor Proton.
