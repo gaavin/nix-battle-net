@@ -93,6 +93,19 @@ in
       '';
     };
 
+    enableProtonWayland = mkOption {
+      type = types.bool;
+      default = false;
+      description = ''
+        Set PROTON_ENABLE_WAYLAND=1. Wine's Wayland driver cannot dock the
+        Battle.net tray icon into the host notification area, so Proton
+        opens a standalone tray window instead. Leave this off so winex11
+        can hand the icon to xembedsniproxy (Plasma) or another XEmbed
+        tray host. Always written so a session-wide PROTON_ENABLE_WAYLAND=1
+        does not leak into Battle.net.
+      '';
+    };
+
     environment = mkOption {
       type = types.attrsOf types.str;
       default = {
@@ -103,7 +116,6 @@ in
         PROTON_USE_NTSYNC = "1";
       };
       example = {
-        PROTON_ENABLE_WAYLAND = "1";
         MANGOHUD = "1";
       };
       description = "Environment variables written to the generated config and sourced at launch.";
@@ -132,6 +144,8 @@ in
           ++ [
             "LAUNCHER_ARGS=${escapeShellArg cfg.launcherArgs}"
             "DISABLE_BATTLENET_HWACCEL=${escapeShellArg (if cfg.disableHardwareAcceleration then "1" else "0")}"
+            "PROTON_ENABLE_WAYLAND=${escapeShellArg (if cfg.enableProtonWayland then "1" else "0")}"
+            "PROTON_USE_WAYLAND=${escapeShellArg (if cfg.enableProtonWayland then "1" else "0")}"
           ]
           ++ lib.optional (cfg.preLaunchArgs != "") "PRE_LAUNCH_ARGS=${escapeShellArg cfg.preLaunchArgs}"
           ++ lib.optional (cfg.extraConfig != "") cfg.extraConfig
@@ -149,6 +163,7 @@ in
             useWineD3D = cfg.useWineD3D;
             launcherArgs = cfg.launcherArgs;
             disableHardwareAcceleration = cfg.disableHardwareAcceleration;
+            enableProtonWayland = cfg.enableProtonWayland;
             protonVersion = cfg.protonVersion;
             configFile = envFile;
           };

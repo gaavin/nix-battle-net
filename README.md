@@ -9,19 +9,17 @@
 
 </div>
 
-## ⚡ Quick Start
+## Quick Start
 
-**Just want to try it?** Point `PROTONPATH` at a Steam compat tool (the `steamcompattool` output), then:
+Point `PROTONPATH` at a Steam compat tool (`steamcompattool` output):
 
 ```bash
 PROTONPATH=/path/to/proton-cachyos nix run github:gaavin/nix-battle-net
 ```
 
-> **Requirements:** `x86_64-linux`, flakes enabled, Proton already installed (this flake does not vendor it).
+Requires `x86_64-linux`, flakes, and a Proton already on the system. This flake does not vendor Proton.
 
----
-
-## 📦 Install with Home Manager
+## Install with Home Manager
 
 ### 1. Add to flake inputs
 
@@ -59,7 +57,7 @@ PROTONPATH=/path/to/proton-cachyos nix run github:gaavin/nix-battle-net
 
 ### 2. Enable in `home.nix`
 
-`protonVersion` must be a Steam compatibility tool with a `steamcompattool` output — the same packages you would pass to Steam.
+`protonVersion` must be a Steam compatibility tool with a `steamcompattool` output.
 
 ```nix
 { nix-battle-net, pkgs, ... }:
@@ -69,13 +67,6 @@ PROTONPATH=/path/to/proton-cachyos nix run github:gaavin/nix-battle-net
   programs.battle-net = {
     enable = true;
     protonVersion = pkgs.proton-cachyos;
-    # Uncomment for custom options:
-    # location = "${config.xdg.dataHome}/nix-battle-net";
-    # gamemode = true;
-    # useWineD3D = false;  # if a game needs DXVK and the launcher is already working
-    # launcherArgs = "--in-process-gpu";  # default; set "" to disable
-    # disableHardwareAcceleration = true;  # default; needed for a white CEF window
-    # preLaunchArgs = "mangohud";
   };
 }
 ```
@@ -88,28 +79,22 @@ sudo nixos-rebuild switch --flake .#YOUR_CONFIGURATION
 battle-net
 ```
 
-✅ First run downloads the Battle.net installer and creates a Proton prefix  
-✅ Finish the installer UI, then `battle-net` again if the launcher did not start  
-✅ Desktop entry included
+First run downloads the installer and creates a Proton prefix. Finish the installer UI, then run `battle-net` again if the launcher did not start.
 
----
-
-## 📋 Commands
+## Commands
 
 | Command | Purpose |
 |---------|---------|
-| <span>battle-net</span> | Launch |
-| <span>battle-net --help</span> | List all commands |
-| <span>battle-net --info</span> | Show config / paths |
-| <span>battle-net --kill</span> | Force quit |
-| <span>battle-net --fix-agent</span> | Clear a stuck Battle.net Agent |
-| <span>battle-net --winecfg</span> | Wine settings |
-| <span>battle-net --winetricks …</span> | winetricks in prefix |
-| <span>battle-net --umu …</span> | Pass args to umu-run |
+| `battle-net` | Launch |
+| `battle-net --help` | List all commands |
+| `battle-net --info` | Show config / paths |
+| `battle-net --kill` | Force quit |
+| `battle-net --fix-agent` | Clear a stuck Battle.net Agent |
+| `battle-net --winecfg` | Wine settings |
+| `battle-net --winetricks …` | winetricks in the prefix |
+| `battle-net --umu …` | Pass args to umu-run |
 
----
-
-## 📁 File Structure
+## Paths
 
 ```
 ~/.local/share/nix-battle-net/
@@ -118,26 +103,23 @@ battle-net
   logs/         Debug logs
 ```
 
-Proton comes from `protonVersion` (or `PROTONPATH`). Battle.net itself auto-updates inside the prefix.
+Proton comes from `protonVersion` (or `PROTONPATH`). Battle.net auto-updates inside the prefix.
 
----
-
-## 🔧 Troubleshooting
+## Troubleshooting
 
 | Issue | Solution |
 |-------|----------|
-| White / blank window, no clicks | Default `--in-process-gpu` + `HardwareAcceleration=false`. Close it, then `battle-net --kill` and launch again. If you enabled Proton Wayland, set `PROTON_ENABLE_WAYLAND=0`. |
+| White / blank window | `battle-net --kill`, then launch again |
+| Tray is its own window | Leave `enableProtonWayland` off (default) |
 | Agent stuck / `BLZBNTBNA00000005` | `battle-net --fix-agent`, then launch again |
 | Proton not found | Set `programs.battle-net.protonVersion = pkgs.proton-cachyos` |
-| Game looks wrong / no DXVK | Set `useWineD3D = false` after the launcher login works |
+| Game looks wrong / no DXVK | `useWineD3D = false` once the launcher works |
 | Stuck Wine processes | `battle-net --kill` |
-| Start fresh | Remove `~/.local/share/nix-battle-net/` (installer + prefix re-created) |
+| Start fresh | Remove `~/.local/share/nix-battle-net/` |
 
----
+## Advanced
 
-## 🎮 Advanced
-
-### Package only (skip Home Manager)
+Package only:
 
 ```nix
 home.packages = [
@@ -147,7 +129,7 @@ home.packages = [
 ];
 ```
 
-### Custom overrides
+Overrides:
 
 ```nix
 inputs.nix-battle-net.packages.${pkgs.stdenv.hostPlatform.system}.battle-net.override {
@@ -155,7 +137,6 @@ inputs.nix-battle-net.packages.${pkgs.stdenv.hostPlatform.system}.battle-net.ove
   protonVersion = pkgs.proton-cachyos;
   useGameMode = true;
   useWineD3D = true;
-  launcherArgs = "--in-process-gpu";
   preLaunchArgs = "mangohud";
 }
 ```
@@ -164,9 +145,7 @@ inputs.nix-battle-net.packages.${pkgs.stdenv.hostPlatform.system}.battle-net.ove
 nix build github:gaavin/nix-battle-net#battle-net
 ```
 
----
-
-## 🙏 Credits
+## Credits
 
 - [Open-Wine-Components/umu-launcher](https://github.com/Open-Wine-Components/umu-launcher) — Proton outside Steam
 - [CachyOS/proton-cachyos](https://github.com/CachyOS/proton-cachyos) — Proton build this is written against

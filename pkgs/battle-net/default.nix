@@ -20,6 +20,8 @@
   # Proton-CachyOS / Proton 11 CEF workaround for a white login window.
   launcherArgs ? "--in-process-gpu",
   disableHardwareAcceleration ? true,
+  # winewayland cannot dock XEmbed tray icons into the host panel.
+  enableProtonWayland ? false,
   # Proton package (steamcompattool output, or Chaotic proton-cachyos with bin/).
   protonVersion ? null,
   configFile ? null,
@@ -80,6 +82,12 @@ let
   }
   // optionalAttrs useWineD3D { PROTON_USE_WINED3D = "1"; }
   // environment
+  // {
+    # Always set these so a session-wide PROTON_ENABLE_WAYLAND=1 cannot
+    # keep Battle.net on winewayland (which draws its own tray window).
+    PROTON_ENABLE_WAYLAND = if enableProtonWayland then "1" else "0";
+    PROTON_USE_WAYLAND = if enableProtonWayland then "1" else "0";
+  }
   // optionalAttrs (preLaunchArgs != "") { PRE_LAUNCH_ARGS = preLaunchArgs; };
 
   packagedConfig = writeText "nix-battle-net.env" (
@@ -254,6 +262,7 @@ let
         download_installer
         ensure_prefix
         apply_cef_workarounds
+        apply_systray_workaround
         info "Running Battle.net installer — finish setup, then close it"
         "$UMU_RUN" "$INSTALLER_EXE" || true
         if BATTLENET_EXE="$(battlenet_exe)"; then
@@ -290,6 +299,19 @@ let
         else
           printf '%s\n' '{"Client":{"HardwareAcceleration":"false"}}' > "$cfg"
         fi
+      }
+
+      # Hide Wine's floating systray window. Icons still dock to the host
+      # tray when winex11 can see _NET_SYSTEM_TRAY (XWayland + xembedsniproxy).
+      apply_systray_workaround() {
+        local reg="$WINEPREFIX_DIR/user.reg"
+        if [ ! -f "$reg" ]; then
+          return 0
+        fi
+        if grep -q '"ShowSystray"=dword:00000000' "$reg"; then
+          return 0
+        fi
+        printf '\n[Software\\\\Wine\\\\Explorer]\n"ShowSystray"=dword:00000000\n' >> "$reg"
       }
 
       prepare() {
@@ -364,6 +386,7 @@ let
           prepare
           ensure_battlenet
           apply_cef_workarounds
+          apply_systray_workaround
           info "Launching $BATTLENET_EXE"
           launcher_args=()
           if [ -z "''${LAUNCHER_ARGS+x}" ]; then
