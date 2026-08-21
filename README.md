@@ -2,7 +2,7 @@
 
 # nix-battle-net
 
-**Battle.net on NixOS** — umu-launcher plus an external Proton.
+**Battle.net on NixOS** — umu-launcher plus an external Proton. Recommended: `proton-cachyos` from [Chaotic-Nyx](https://github.com/chaotic-cx/nyx).
 
 [![NixOS](https://img.shields.io/badge/NixOS-unstable-informational?logo=NixOS)](https://nixos.org)
 [![Flake](https://img.shields.io/badge/Flake-enabled-success)](https://nixos.wiki/wiki/Flakes)
@@ -17,7 +17,7 @@ Point `PROTONPATH` at a Steam compat tool (`steamcompattool` output):
 PROTONPATH=/path/to/proton nix run github:gaavin/nix-battle-net
 ```
 
-Requires `x86_64-linux`, flakes, and a Proton already on the system. This flake does not vendor Proton.
+Requires `x86_64-linux`, flakes, and a Proton already on the system. This flake does not vendor Proton. Prefer [Chaotic-Nyx](https://github.com/chaotic-cx/nyx)'s `proton-cachyos` (see below).
 
 ## Install with Home Manager
 
@@ -30,16 +30,19 @@ Requires `x86_64-linux`, flakes, and a Proton already on the system. This flake 
     home-manager.url = "github:nix-community/home-manager";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
 
+    chaotic.url = "github:chaotic-cx/nyx/nyxpkgs-unstable";
+
     nix-battle-net.url = "github:gaavin/nix-battle-net";
     nix-battle-net.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { self, nixpkgs, home-manager, nix-battle-net, ... }:
+  outputs = { self, nixpkgs, home-manager, chaotic, nix-battle-net, ... }:
     {
       nixosConfigurations.YOUR_CONFIGURATION = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
         modules = [
           ./configuration.nix
+          chaotic.nixosModules.default
           home-manager.nixosModules.home-manager
           {
             home-manager = {
@@ -57,7 +60,7 @@ Requires `x86_64-linux`, flakes, and a Proton already on the system. This flake 
 
 ### 2. Enable in `home.nix`
 
-`protonVersion` must be a Steam compatibility tool with a `steamcompattool` output.
+Recommended Proton is [`proton-cachyos`](https://www.nyx.chaotic.cx/) from Chaotic-Nyx. After importing `chaotic.nixosModules.default` (above), it is `pkgs.proton-cachyos`. Other Steam compatibility tools with a `steamcompattool` output (for example `pkgs.proton-ge-bin`) also work.
 
 ```nix
 { nix-battle-net, pkgs, ... }:
@@ -66,7 +69,7 @@ Requires `x86_64-linux`, flakes, and a Proton already on the system. This flake 
 
   programs.battle-net = {
     enable = true;
-    protonVersion = pkgs.proton-cachyos;
+    protonVersion = pkgs.proton-cachyos; # Chaotic-Nyx
   };
 }
 ```
@@ -112,7 +115,7 @@ Proton comes from `protonVersion` (or `PROTONPATH`). Battle.net auto-updates ins
 | White / blank window | `battle-net --kill`, then launch again |
 | Tray is its own window | Leave `enableProtonWayland` off (default) |
 | Agent stuck / `BLZBNTBNA00000005` | `battle-net --fix-agent`, then launch again |
-| Proton not found | Set `programs.battle-net.protonVersion = pkgs.proton-cachyos` |
+| Proton not found | Add Chaotic-Nyx and set `programs.battle-net.protonVersion = pkgs.proton-cachyos` |
 | Game looks wrong / no DXVK | `useWineD3D = false` once the launcher works |
 | Stuck Wine processes | `battle-net --kill` |
 | Start fresh | Remove `~/.local/share/nix-battle-net/` |
@@ -149,5 +152,6 @@ nix build github:gaavin/nix-battle-net#battle-net
 
 - [Open-Wine-Components/umu-launcher](https://github.com/Open-Wine-Components/umu-launcher) — Proton outside Steam
 - [CachyOS/proton-cachyos](https://github.com/CachyOS/proton-cachyos) — Proton build this is written against
+- [chaotic-cx/nyx](https://github.com/chaotic-cx/nyx) — recommended package: `proton-cachyos`
 - [gaavin/nix-osu-stable](https://github.com/gaavin/nix-osu-stable) — packaging pattern
 - [ptrj/battle.net-on-linux](https://github.com/ptrj/battle.net-on-linux) — launcher env / Agent workaround
