@@ -153,4 +153,5 @@ nix build github:gaavin/nix-battle-net#battle-net
 - [Open-Wine-Components/umu-launcher](https://github.com/Open-Wine-Components/umu-launcher) — Proton outside Steam
 - [CachyOS/proton-cachyos](https://github.com/CachyOS/proton-cachyos) — Proton build this is written against
 - [chaotic-cx/nyx](https://github.com/chaotic-cx/nyx) — recommended package: `proton-cachyos`
+- [different-name/steam-config-nix](https://github.com/different-name/steam-config-nix) — Proton compat-tool path layout
 - [ptrj/battle.net-on-linux](https://github.com/ptrj/battle.net-on-linux) — launcher env / Agent workaround
