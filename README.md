@@ -2,7 +2,7 @@
 
 # nix-battle-net
 
-**Battle.net on NixOS** — umu-launcher plus an external Proton (proton-cachyos).
+**Battle.net on NixOS** — umu-launcher plus an external Proton.
 
 [![NixOS](https://img.shields.io/badge/NixOS-unstable-informational?logo=NixOS)](https://nixos.org)
 [![Flake](https://img.shields.io/badge/Flake-enabled-success)](https://nixos.wiki/wiki/Flakes)
