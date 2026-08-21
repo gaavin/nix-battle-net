@@ -16,7 +16,7 @@
   pname ? "battle-net",
   location ? "$HOME/.local/share/nix-battle-net",
   useGameMode ? false,
-  useWineD3D ? true,
+  useWineD3D ? false,
   # Proton-CachyOS / Proton 11 CEF workaround for a white login window.
   launcherArgs ? "--in-process-gpu",
   disableHardwareAcceleration ? true,
@@ -80,11 +80,12 @@ let
     LAUNCHER_ARGS = launcherArgs;
     DISABLE_BATTLENET_HWACCEL = if disableHardwareAcceleration then "1" else "0";
   }
-  // optionalAttrs useWineD3D { PROTON_USE_WINED3D = "1"; }
   // environment
   // {
-    # Always set these so a session-wide PROTON_ENABLE_WAYLAND=1 cannot
-    # keep Battle.net on winewayland (which draws its own tray window).
+    # Always set these so session-wide Proton flags cannot leak in.
+    # WineD3D disables vkd3d-proton, so DX12 games see no GPU.
+    PROTON_USE_WINED3D = if useWineD3D then "1" else "0";
+    # winewayland cannot dock XEmbed tray icons into the host panel.
     PROTON_ENABLE_WAYLAND = if enableProtonWayland then "1" else "0";
     PROTON_USE_WAYLAND = if enableProtonWayland then "1" else "0";
   }

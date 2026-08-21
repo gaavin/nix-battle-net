@@ -65,11 +65,13 @@ in
 
     useWineD3D = mkOption {
       type = types.bool;
-      default = true;
+      default = false;
       description = ''
-        Set PROTON_USE_WINED3D=1 for the Battle.net launcher. Helps the CEF
-        login window on Wayland. Turn off if a game launched from Battle.net
-        needs DXVK and is stuck on wined3d.
+        Set PROTON_USE_WINED3D=1. That disables DXVK and vkd3d-proton, so
+        DirectX 12 games fail with "No valid DX12 video card found". Leave
+        off unless the CEF login window is still white after the default
+        `--in-process-gpu` workaround. Always written so a session-wide
+        PROTON_USE_WINED3D=1 does not leak into games.
       '';
     };
 
@@ -140,8 +142,8 @@ in
       envFile = pkgs.writeText "nix-battle-net.env" (
         concatStringsSep "\n" (
           mapAttrsToList (k: v: "${k}=${escapeShellArg v}") cfg.environment
-          ++ lib.optional cfg.useWineD3D "PROTON_USE_WINED3D=${escapeShellArg "1"}"
           ++ [
+            "PROTON_USE_WINED3D=${escapeShellArg (if cfg.useWineD3D then "1" else "0")}"
             "LAUNCHER_ARGS=${escapeShellArg cfg.launcherArgs}"
             "DISABLE_BATTLENET_HWACCEL=${escapeShellArg (if cfg.disableHardwareAcceleration then "1" else "0")}"
             "PROTON_ENABLE_WAYLAND=${escapeShellArg (if cfg.enableProtonWayland then "1" else "0")}"

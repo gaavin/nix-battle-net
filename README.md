@@ -116,7 +116,7 @@ Proton comes from `protonVersion` (or `PROTONPATH`). Battle.net auto-updates ins
 | Tray is its own window | Leave `enableProtonWayland` off (default) |
 | Agent stuck / `BLZBNTBNA00000005` | `battle-net --fix-agent`, then launch again |
 | Proton not found | Add Chaotic-Nyx and set `programs.battle-net.protonVersion = pkgs.proton-cachyos` |
-| Game looks wrong / no DXVK | `useWineD3D = false` once the launcher works |
+| DX12: no valid video card | Leave `useWineD3D` off (default), then restart Battle.net |
 | Stuck Wine processes | `battle-net --kill` |
 | Start fresh | Remove `~/.local/share/nix-battle-net/` |
 
@@ -139,7 +139,6 @@ inputs.nix-battle-net.packages.${pkgs.stdenv.hostPlatform.system}.battle-net.ove
   location = "$HOME/Games/Battlenet";
   protonVersion = pkgs.proton-cachyos;
   useGameMode = true;
-  useWineD3D = true;
   preLaunchArgs = "mangohud";
 }
 ```
