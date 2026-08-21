@@ -73,6 +73,26 @@ in
       '';
     };
 
+    launcherArgs = mkOption {
+      type = types.str;
+      default = "--in-process-gpu";
+      example = "--in-process-gpu";
+      description = ''
+        Extra arguments passed to Battle.net Launcher.exe. `--in-process-gpu`
+        is the Proton-CachyOS / Proton-GE workaround for a white CEF window.
+        Set to `""` to pass no extra arguments.
+      '';
+    };
+
+    disableHardwareAcceleration = mkOption {
+      type = types.bool;
+      default = true;
+      description = ''
+        Write HardwareAcceleration=false to Battle.net.config before launch.
+        Needed because a white CEF window cannot open the in-app settings gear.
+      '';
+    };
+
     environment = mkOption {
       type = types.attrsOf types.str;
       default = {
@@ -109,6 +129,10 @@ in
         concatStringsSep "\n" (
           mapAttrsToList (k: v: "${k}=${escapeShellArg v}") cfg.environment
           ++ lib.optional cfg.useWineD3D "PROTON_USE_WINED3D=${escapeShellArg "1"}"
+          ++ [
+            "LAUNCHER_ARGS=${escapeShellArg cfg.launcherArgs}"
+            "DISABLE_BATTLENET_HWACCEL=${escapeShellArg (if cfg.disableHardwareAcceleration then "1" else "0")}"
+          ]
           ++ lib.optional (cfg.preLaunchArgs != "") "PRE_LAUNCH_ARGS=${escapeShellArg cfg.preLaunchArgs}"
           ++ lib.optional (cfg.extraConfig != "") cfg.extraConfig
         )
@@ -123,6 +147,8 @@ in
             location = cfg.location;
             useGameMode = cfg.gamemode;
             useWineD3D = cfg.useWineD3D;
+            launcherArgs = cfg.launcherArgs;
+            disableHardwareAcceleration = cfg.disableHardwareAcceleration;
             protonVersion = cfg.protonVersion;
             configFile = envFile;
           };

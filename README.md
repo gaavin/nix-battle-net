@@ -73,6 +73,8 @@ PROTONPATH=/path/to/proton-cachyos nix run github:gaavin/nix-battle-net
     # location = "${config.xdg.dataHome}/nix-battle-net";
     # gamemode = true;
     # useWineD3D = false;  # if a game needs DXVK and the launcher is already working
+    # launcherArgs = "--in-process-gpu";  # default; set "" to disable
+    # disableHardwareAcceleration = true;  # default; needed for a white CEF window
     # preLaunchArgs = "mangohud";
   };
 }
@@ -124,7 +126,7 @@ Proton comes from `protonVersion` (or `PROTONPATH`). Battle.net itself auto-upda
 
 | Issue | Solution |
 |-------|----------|
-| Blank login window | Keep `useWineD3D = true` (default) and `WINE_SIMULATE_WRITECOPY=1` |
+| White / blank window, no clicks | Default `--in-process-gpu` + `HardwareAcceleration=false`. Close it, then `battle-net --kill` and launch again. If you enabled Proton Wayland, set `PROTON_ENABLE_WAYLAND=0`. |
 | Agent stuck / `BLZBNTBNA00000005` | `battle-net --fix-agent`, then launch again |
 | Proton not found | Set `programs.battle-net.protonVersion = pkgs.proton-cachyos` |
 | Game looks wrong / no DXVK | Set `useWineD3D = false` after the launcher login works |
@@ -153,6 +155,7 @@ inputs.nix-battle-net.packages.${pkgs.stdenv.hostPlatform.system}.battle-net.ove
   protonVersion = pkgs.proton-cachyos;
   useGameMode = true;
   useWineD3D = true;
+  launcherArgs = "--in-process-gpu";
   preLaunchArgs = "mangohud";
 }
 ```

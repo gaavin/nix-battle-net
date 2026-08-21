@@ -12,10 +12,14 @@
   wget,
   procps,
   gamemode,
+  jq,
   pname ? "battle-net",
   location ? "$HOME/.local/share/nix-battle-net",
   useGameMode ? false,
   useWineD3D ? true,
+  # Proton-CachyOS / Proton 11 CEF workaround for a white login window.
+  launcherArgs ? "--in-process-gpu",
+  disableHardwareAcceleration ? true,
   # Proton package (steamcompattool output, or Chaotic proton-cachyos with bin/).
   protonVersion ? null,
   configFile ? null,
@@ -71,6 +75,8 @@ let
     WINE_SIMULATE_WRITECOPY = "1";
     WINEDLLOVERRIDES = "locationapi=d";
     PROTON_USE_NTSYNC = "1";
+    LAUNCHER_ARGS = launcherArgs;
+    DISABLE_BATTLENET_HWACCEL = if disableHardwareAcceleration then "1" else "0";
   }
   // optionalAttrs useWineD3D { PROTON_USE_WINED3D = "1"; }
   // environment
@@ -91,6 +97,7 @@ let
       procps
       winetricks
       umu-launcher
+      jq
     ]
     ++ optional useGameMode gamemode;
 
@@ -246,6 +253,7 @@ let
         fi
         download_installer
         ensure_prefix
+        apply_cef_workarounds
         info "Running Battle.net installer — finish setup, then close it"
         "$UMU_RUN" "$INSTALLER_EXE" || true
         if BATTLENET_EXE="$(battlenet_exe)"; then
@@ -259,6 +267,29 @@ let
       kill_battlenet() {
         pkill -f 'Battle.net' 2>/dev/null || true
         pkill -f wineserver 2>/dev/null || true
+      }
+
+      # Battle.net's CEF login UI often paints a solid white window under Proton
+      # on Wayland. Lutris writes HardwareAcceleration=false; Proton-CachyOS
+      # recommends --in-process-gpu on the launcher exe.
+      apply_cef_workarounds() {
+        local cfg="$WINEPREFIX_DIR/drive_c/users/steamuser/AppData/Roaming/Battle.net/Battle.net.config"
+        local tmp
+        if [ "''${DISABLE_BATTLENET_HWACCEL:-1}" = "0" ]; then
+          return 0
+        fi
+        mkdir -p "$(dirname "$cfg")"
+        if [ -s "$cfg" ]; then
+          tmp="$(mktemp)"
+          if jq '.Client.HardwareAcceleration = "false"' "$cfg" > "$tmp" && [ -s "$tmp" ]; then
+            mv -f "$tmp" "$cfg"
+          else
+            rm -f "$tmp"
+            info "Could not update Battle.net.config"
+          fi
+        else
+          printf '%s\n' '{"Client":{"HardwareAcceleration":"false"}}' > "$cfg"
+        fi
       }
 
       prepare() {
@@ -332,8 +363,16 @@ let
         "")
           prepare
           ensure_battlenet
+          apply_cef_workarounds
           info "Launching $BATTLENET_EXE"
-          run_umu "$BATTLENET_EXE"
+          launcher_args=()
+          if [ -z "''${LAUNCHER_ARGS+x}" ]; then
+            launcher_args=(--in-process-gpu)
+          elif [ -n "''${LAUNCHER_ARGS}" ]; then
+            # shellcheck disable=SC2206
+            read -r -a launcher_args <<<"''${LAUNCHER_ARGS}"
+          fi
+          run_umu "$BATTLENET_EXE" "''${launcher_args[@]}"
           ;;
         *)
           err "Unknown command: $1"
