@@ -40,9 +40,10 @@ in
       default = null;
       example = literalExpression "pkgs.proton-cachyos";
       description = ''
-        Proton build passed to umu-launcher as PROTONPATH. Must be a Steam
-        compatibility tool with a `steamcompattool` output (proton-cachyos,
-        proton-ge-bin, and similar). Required when the module is enabled.
+        Proton build passed to umu-launcher as PROTONPATH. Accepts Steam
+        compatibility tools with a `steamcompattool` output (proton-ge-bin)
+        and packages that nest the tool under `bin/` (Chaotic proton-cachyos).
+        Required when the module is enabled.
       '';
     };
 
@@ -141,9 +142,8 @@ in
         {
           assertion = cfg.protonVersion != null;
           message = ''
-            programs.battle-net.protonVersion is unset. Set it to a Steam
-            compatibility tool package with a steamcompattool output, for example
-            pkgs.proton-cachyos.
+            programs.battle-net.protonVersion is unset. Set it to a Proton
+            package such as pkgs.proton-cachyos or pkgs.proton-ge-bin.
           '';
         }
       ];

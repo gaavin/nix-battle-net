@@ -16,7 +16,7 @@
   location ? "$HOME/.local/share/nix-battle-net",
   useGameMode ? false,
   useWineD3D ? true,
-  # Steam compat-tool package with a steamcompattool output (e.g. proton-cachyos).
+  # Proton package (steamcompattool output, or Chaotic proton-cachyos with bin/).
   protonVersion ? null,
   configFile ? null,
   environment ? { },
@@ -28,18 +28,40 @@ let
     concatStringsSep
     escapeShellArg
     getExe
+    getName
     getOutput
-    makeSearchPathOutput
     mapAttrsToList
     optional
     optionalAttrs
     optionalString
     ;
 
-  protonCompatPath = if protonVersion == null then "" else getOutput "steamcompattool" protonVersion;
+  # Steam compat tools put proton + compatibilitytool.vdf at the root of the
+  # steamcompattool output. Chaotic's proton-cachyos instead nests them under
+  # bin/ and often has no steamcompattool output — same layout probe as
+  # steam-config-nix (compatToolDir).
+  protonCompatPath =
+    if protonVersion == null then
+      ""
+    else
+      let
+        base = getOutput "steamcompattool" protonVersion;
+      in
+      runCommand "${getName protonVersion}-steamcompattool" {
+        preferLocalBuild = true;
+        allowSubstitutes = false;
+      } ''
+        if [ -e ${escapeShellArg "${base}/proton"} ] || [ -f ${escapeShellArg "${base}/compatibilitytool.vdf"} ]; then
+          ln -s ${escapeShellArg base} "$out"
+        elif [ -e ${escapeShellArg "${base}/bin/proton"} ] || [ -f ${escapeShellArg "${base}/bin/compatibilitytool.vdf"} ]; then
+          ln -s ${escapeShellArg "${base}/bin"} "$out"
+        else
+          echo "nix-battle-net: no Proton compat tool found in ${base} or ${base}/bin" >&2
+          exit 1
+        fi
+      '';
 
-  extraCompatPaths =
-    if protonVersion == null then "" else makeSearchPathOutput "steamcompattool" "" [ protonVersion ];
+  extraCompatPaths = protonCompatPath;
 
   installerUrl = "https://downloader.battle.net/download/getInstallerForGame?os=win&gameProgram=BATTLENET_APP&version=Live";
 
@@ -103,17 +125,40 @@ let
       info() { printf '\033[1;34mnix-battle-net:\033[0m %s\n' "$*" >&2; }
       err() { printf '\033[1;31mnix-battle-net:\033[0m %s\n' "$*" >&2; }
 
+      find_proton_dir() {
+        local candidate="$1"
+        if [ -e "$candidate/proton" ]; then
+          printf '%s' "$candidate"
+          return 0
+        fi
+        if [ -e "$candidate/bin/proton" ]; then
+          printf '%s' "$candidate/bin"
+          return 0
+        fi
+        return 1
+      }
+
       resolve_proton() {
+        local resolved=""
         if [ -n "''${PROTONPATH:-}" ]; then
-          :
+          if ! resolved="$(find_proton_dir "$PROTONPATH")"; then
+            err "PROTONPATH does not look like a Proton build: $PROTONPATH"
+            err "Need a Steam compat tool directory containing a proton script (or bin/proton)."
+            return 1
+          fi
         elif [ -n "$PACKAGED_PROTON" ] && [ -d "$PACKAGED_PROTON" ]; then
-          export PROTONPATH="$PACKAGED_PROTON"
+          if ! resolved="$(find_proton_dir "$PACKAGED_PROTON")"; then
+            err "Packaged Proton does not look like a Proton build: $PACKAGED_PROTON"
+            err "Need a Steam compat tool directory containing a proton script (or bin/proton)."
+            return 1
+          fi
         else
           err "No Proton found."
           err "Set programs.battle-net.protonVersion (e.g. pkgs.proton-cachyos)"
           err "or export PROTONPATH to a Steam compat tool directory."
           return 1
         fi
+        export PROTONPATH="$resolved"
 
         if [ -n "$PACKAGED_COMPAT_PATHS" ]; then
           if [ -n "''${STEAM_EXTRA_COMPAT_TOOLS_PATHS:-}" ]; then
@@ -121,12 +166,6 @@ let
           else
             export STEAM_EXTRA_COMPAT_TOOLS_PATHS="$PACKAGED_COMPAT_PATHS"
           fi
-        fi
-
-        if [ -d "$PROTONPATH" ] && [ ! -e "$PROTONPATH/proton" ]; then
-          err "PROTONPATH does not look like a Proton build: $PROTONPATH"
-          err "Need a Steam compat tool (steamcompattool output) containing a proton script."
-          return 1
         fi
       }
 
